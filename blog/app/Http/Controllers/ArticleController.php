@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Http\Requests\ArticleRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ArticleController extends Controller
 {
@@ -23,15 +25,13 @@ class ArticleController extends Controller
     }
 
     // Store a newly created article
-    public function store(Request $request)
+    public function store(ArticleRequest $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'category_id' => 'required|exists:categories,id',
-        ]);
-
-        Article::create($request->all());
+        $validated = $request->validated();
+        $validated["user_id"] = Auth::id(); // Ensure user is authenticated
+        $validated["category_id"] = $request->category_id; // Fix category assignment
+        
+        Article::create($validated);
 
         return redirect()->route('articles.index')->with('success', 'Article created successfully.');
     }
@@ -43,19 +43,18 @@ class ArticleController extends Controller
         return view('admin.articles.edit', compact('article', 'categories'));
     }
 
+            
     // Update an existing article
-    public function update(Request $request, Article $article)
+    public function update(ArticleRequest $request, Article $article)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        $validated = $request->validated();
+        $validated["category_id"] = $request->category_id; // Ensure correct category assignment
 
-        $article->update($request->all());
+        $article->update($validated);
 
         return redirect()->route('articles.index')->with('success', 'Article updated successfully.');
     }
+
 
     // Delete an article
     public function destroy(Article $article)
